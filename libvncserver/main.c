@@ -24,7 +24,7 @@
 #define false 0
 #define true -1
 #endif
-
+ 
 #ifdef LIBVNCSERVER_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -37,6 +37,8 @@
 
 #include <signal.h>
 #include <time.h>
+
+#include <_cgo_export.h>
 
 static int extMutex_initialized = 0;
 static int logMutex_initialized = 0;
@@ -635,14 +637,19 @@ rfbRefuseOnHoldClient(rfbClientPtr cl)
     rfbClientConnectionGone(cl);
 }
 
+
 static void
 rfbDefaultKbdAddEvent(rfbBool down, rfbKeySym keySym, rfbClientPtr cl)
 {
+  //call my go coode 
+  goCallbackKbdAddEvent(down, keySym, cl);
 }
 
 void
 rfbDefaultPtrAddEvent(int buttonMask, int x, int y, rfbClientPtr cl)
 {
+  goCallbackPtrAddEvent(buttonMask, x, y, cl);
+
   rfbClientIteratorPtr iterator;
   rfbClientPtr other_client;
   rfbScreenInfoPtr s = cl->screen;
@@ -761,12 +768,20 @@ rfbBool rfbCheckPasswordByList(rfbClientPtr cl,const char* response,int len)
 
 void rfbDoNothingWithClient(rfbClientPtr cl)
 {
+    goCallbackKbdReleaseAllKeys(cl);
 }
 
 static enum rfbNewClientAction rfbDefaultNewClientHook(rfbClientPtr cl)
 {
+  goCallbackNewClientHook(cl);
 	return RFB_CLIENT_ACCEPT;
 }
+
+void rfbDefaultDisplayHook(rfbClientPtr cl)
+{
+  // gocallbackDisplayHook(cl);
+}
+
 
 /*
  * Update server's pixel format in screenInfo structure. This
@@ -926,7 +941,7 @@ rfbScreenInfoPtr rfbGetScreen(int* argc,char** argv,
    screen->getCursorPtr = rfbDefaultGetCursorPtr;
    screen->setTranslateFunction = rfbSetTranslateFunction;
    screen->newClientHook = rfbDefaultNewClientHook;
-   screen->displayHook = NULL;
+   screen->displayHook = rfbDefaultDisplayHook;
    screen->displayFinishedHook = NULL;
    screen->getKeyboardLedStateHook = NULL;
    screen->xvpHook = NULL;
